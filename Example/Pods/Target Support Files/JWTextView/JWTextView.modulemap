@@ -1,0 +1,6 @@
+framework module JWTextView {
+  umbrella header "JWTextView-umbrella.h"
+
+  export *
+  module * { export * }
+}

@@ -1,0 +1,16 @@
+PODS:
+  - JWTextView (0.1.0)
+
+DEPENDENCIES:
+  - JWTextView (from `../`)
+
+EXTERNAL SOURCES:
+  JWTextView:
+    :path: "../"
+
+SPEC CHECKSUMS:
+  JWTextView: b9c70e4d938d9a92e450f9d4fc0000735712ec77
+
+PODFILE CHECKSUM: e8a0e16ba96425e98989a3647eee1bf1c09bd15a
+
+COCOAPODS: 1.10.0

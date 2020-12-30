@@ -1,0 +1,11 @@
+use_frameworks!
+
+platform :ios, '9.0'
+
+target 'JWTextView_Example' do
+  pod 'JWTextView', :path => '../'
+
+  target 'JWTextView_Tests' do
+    inherit! :search_paths
+  end
+end
