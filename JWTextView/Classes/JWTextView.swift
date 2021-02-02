@@ -123,6 +123,7 @@ class JWTextViewResolver {
         
         var linkDataList: [JWLinkTextData] = []
         var textDataList: [JWTextTextData] = []
+        var imageDataList: [JWImageViewData] = []
         
         for item in configArray {
             
@@ -152,9 +153,16 @@ class JWTextViewResolver {
                 let imageAtt = JWTextViewImageResolver.resolveImageData(from: imageConfig, textConfig: commonTxtConfig)
                 result.append(imageAtt)
                 
+                let length = result.length - startPos
+                var imageData = JWImageViewData(imagePosition: .zero, uri: imageConfig.resouceAddress, range: NSRange(location: startPos, length: length))
+                imageData.imageSize = CGSize(width: imageConfig.width, height: imageConfig.height)
+                imageDataList.append(imageData)
             }
         }
         var data = JWTextViewConfigResolver.resolveConfig(with: result, width: width)
+        if let ctFrameTmp = data.ctFrame {
+            JWTextViewImageResolver.fillImageData(from: ctFrameTmp, imageArray: &imageDataList)
+        }
         data.rawAttributedString = result
         data.linkDataList = linkDataList
         data.textDataList = textDataList
@@ -273,7 +281,7 @@ class JWTextViewImageResolver {
         return space
     }
     
-    static func fillImageData(from ctFrame: CTFrame, imageArray: inout [JWImageViewConfig]) {
+    static func fillImageData(from ctFrame: CTFrame, imageArray: inout [JWImageViewData]) {
         if imageArray.count <= 0 {
             return
         }
@@ -284,29 +292,41 @@ class JWTextViewImageResolver {
         
         var imgIndex = 0
         
-        var imageData: JWImageViewConfig?
+        var imageData: JWImageViewData?
         imageData = imageArray.first
         
         for index in 0...linesCount-1 {
             guard let _ = imageData else { return }
-            let line = CFArrayGetValueAtIndex(lines, index).load(as: CTLine.self)
+            
+            guard let linePointer = CFArrayGetValueAtIndex(lines, index) else { continue }
+            let linePointerPointer = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<UnsafeRawPointer>.stride, alignment: MemoryLayout<UnsafeRawPointer>.alignment)
+            linePointerPointer.storeBytes(of: linePointer, as: UnsafeRawPointer.self)
+            let line = linePointerPointer.load(as: CTLine.self)
             let runObjArray = CTLineGetGlyphRuns(line)
             
             for runIndex in 0...CFArrayGetCount(runObjArray)-1 {
-                let run = CFArrayGetValueAtIndex(runObjArray, runIndex).load(as: CTRun.self)
-//                let runAttributes = CTRunGetAttributes(run)
-//                var key = kCTRunDelegateAttributeName
-//                guard let delegatePointer = CFDictionaryGetValue(runAttributes, &key) else { continue }
+//                let run = CFArrayGetValueAtIndex(runObjArray, runIndex).load(as: CTRun.self)
+                guard let runPointer = CFArrayGetValueAtIndex(runObjArray, runIndex) else { continue }
+                let runPointerPointer = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<UnsafeRawPointer>.stride, alignment: MemoryLayout<UnsafeRawPointer>.alignment)
+                runPointerPointer.storeBytes(of: runPointer, as: UnsafeRawPointer.self)
+                let run = runPointerPointer.load(as: CTRun.self)
+                let runAttributes = CTRunGetAttributes(run)
+                var key = kCTRunDelegateAttributeName
+                
+//                let keyPointer = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<CFString>.stride, alignment: MemoryLayout<CFString>.alignment)
+//                keyPointer.storeBytes(of: key, as: CFString.self)
+//                guard let delegatePointer = CFDictionaryGetValue(runAttributes, keyPointer) else { continue }
 //                let delegate = delegatePointer.load(as: CTRunDelegate.self)
-//                let metaConfig = CTRunDelegateGetRefCon(delegate)
-//                if !(metaConfig is JWImageViewConfig) {
-//                    continue
-//                }
+                guard let delegate = (runAttributes as Dictionary)[key] as! CTRunDelegate? else { continue }
+                let metaConfig = CTRunDelegateGetRefCon(delegate)
+                if !(metaConfig is JWImageViewConfig) {
+                    continue
+                }
                 
                 var runBounds = CGRect.zero
                 var ascent = CGFloat(0)
                 var descent = CGFloat(0)
-                CTRunGetTypographicBounds(run, CFRangeMake(0, 0), &ascent, &descent, nil)
+                runBounds.size.width = CGFloat(CTRunGetTypographicBounds(run, CFRangeMake(0, 0), &ascent, &descent, nil))
                 runBounds.size.height = ascent + descent
                 
                 let xOffset = CTLineGetOffsetForStringIndex(line, CTRunGetStringRange(run).location, nil)
@@ -486,6 +506,7 @@ public struct JWImageViewConfig: JWConfigProtocol {
     public var width: CGFloat = 0
     public var height: CGFloat = 0
     public var resouceAddress: String = ""
+    public var imageData: Data?
     
     public init() {
     }
@@ -538,6 +559,7 @@ struct JWImageViewData: JWDataProtocol {
     let type: JWTextViewDataType = .image
     
     var imagePosition: CGRect = .zero
+    var imageSize: CGSize = .zero
     var uri: String = ""
     var range: NSRange = NSRange(location: 0, length: 0)
 }
@@ -551,6 +573,7 @@ struct JWTextViewData {
     
     var textDataList: [JWTextTextData] = []
     var linkDataList: [JWLinkTextData] = []
+    var imageDataList: [JWImageViewData] = []
 }
 
 // MARK: protocol
