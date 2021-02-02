@@ -16,7 +16,7 @@ class ViewController: UIViewController {
         // Do any additional setup after loading the view, typically from a nib.
         
         var textConfig = JWTextViewTextConfig()
-        textConfig.content = "测试文本测试文本测试文本测试文本测试文本测试文本测试文本测试文本测试文本测试文本测试文本测试文本测试文本测试文本测试文本测试文本测试文本测试文本"
+        textConfig.content = "测试文本测试文本测试文本测试文本测试文本"
         textConfig.textColor = UIColor.red
         textConfig.fontSize = 16
         textConfig.width = 200
@@ -28,13 +28,18 @@ class ViewController: UIViewController {
         
         let imageConfig = JWImageViewConfig()
         
+        var textConfig1 = JWTextViewTextConfig()
+        textConfig1.content = "测试文本测试文本测试文本测试文本测试文本"
+        textConfig1.textColor = UIColor.red
+        textConfig1.fontSize = 16
+        textConfig1.width = 200
         
         let textView = JWTextView(frame: CGRect(x: 16, y: 100, width: 200, height: 200))
         textView.config.width = 200
         textView.backgroundColor = .clear
         view.addSubview(textView)
         
-        textView.textConfigs = [textConfig, linkConfig]
+        textView.textConfigs = [textConfig, linkConfig, textConfig1]
     }
 
     override func didReceiveMemoryWarning() {

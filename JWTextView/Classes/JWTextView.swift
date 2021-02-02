@@ -102,7 +102,7 @@ extension JWTextView: UIGestureRecognizerDelegate {
             if let linkData = clickData as? JWLinkTextData {
                 print("click on : \(linkData.uri)")
                 clickHandler?(linkData)
-            } else if let textData = clickData as? JWTextTextData {
+            } else if let textData = clickData as? JWCharacterTextData {
                 print("click on text: \(textData.content)")
             } else {
                 print("click on position: \(point)")
@@ -155,6 +155,7 @@ class JWTextViewResolver {
             }
         }
         var data = JWTextViewConfigResolver.resolveConfig(with: result, width: width)
+        data.rawAttributedString = result
         data.linkDataList = linkDataList
         data.textDataList = textDataList
         return data
@@ -413,7 +414,9 @@ class JWTextViewGestureResolver {
                 if let foundLink = JWTextViewGestureResolver.textLink(at: idx, linkArray: data.linkDataList) {
                     return foundLink
                 } else if let foundText = JWTextViewGestureResolver.text(at: idx, textArray: data.textDataList) {
-                    return foundText
+                   return foundText
+                } else if let foundCharacter = JWTextViewGestureResolver.character(at: idx, text: data.rawAttributedString ?? NSAttributedString()) {
+                    return JWCharacterTextData(content: foundCharacter)
                 }
             }
         }
@@ -451,6 +454,10 @@ class JWTextViewGestureResolver {
             }
         }
         return text
+    }
+    
+    static func character(at index: CFIndex, text: NSAttributedString) -> String.Element? {
+        return text.string[text.string.index(text.string.startIndex, offsetBy: index)]
     }
 }
 
@@ -498,6 +505,14 @@ public struct JWLinkTextConfig: JWConfigProtocol {
     }
 }
 
+// character内部使用的data
+struct JWCharacterTextData: JWDataProtocol {
+    
+    let type: JWTextViewDataType = .charater
+    
+    var content: String.Element = String.Element("")
+}
+
 // text内部使用的data
 struct JWTextTextData: JWDataProtocol {
     
@@ -532,6 +547,8 @@ struct JWTextViewData {
     var height: CGFloat = 0
     var ctFrame: CTFrame?
     
+    var rawAttributedString: NSMutableAttributedString?
+    
     var textDataList: [JWTextTextData] = []
     var linkDataList: [JWLinkTextData] = []
 }
@@ -550,6 +567,7 @@ public protocol JWConfigProtocol {
 // MARK: enum
 
 enum JWTextViewDataType {
+    case charater
     case text
     case link
     case image
