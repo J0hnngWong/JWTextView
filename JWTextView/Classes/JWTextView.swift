@@ -8,11 +8,11 @@
 
 import UIKit
 
-class JWTextView: UIView {
+public class JWTextView: UIView {
     
-    public var clickHandler: ((JWDataProtocol) -> ())?
+    private var clickHandler: ((JWDataProtocol) -> ())?
     
-    var config = JWTextViewConfig() {
+    public var config = JWTextViewConfig() {
         didSet {
             // 重绘
             // need redraw
@@ -20,7 +20,7 @@ class JWTextView: UIView {
         }
     }
     
-    var textConfigs: [JWConfigProtocol] = [] {
+    public var textConfigs: [JWConfigProtocol] = [] {
         didSet {
             needRedrawText()
         }
@@ -34,18 +34,18 @@ class JWTextView: UIView {
     
     private var data: JWTextViewData?
     
-    override func draw(_ rect: CGRect) {
+    public override func draw(_ rect: CGRect) {
         super.draw(rect)
         contentMode = .redraw
         drawText()
     }
     
-    override init(frame: CGRect) {
+    public override init(frame: CGRect) {
         super.init(frame: frame)
         setupTapGesture()
     }
     
-    required init?(coder: NSCoder) {
+    public required init?(coder: NSCoder) {
         super.init(coder: coder)
         setupTapGesture()
     }
@@ -102,6 +102,10 @@ extension JWTextView: UIGestureRecognizerDelegate {
             if let linkData = clickData as? JWLinkTextData {
                 print("click on : \(linkData.uri)")
                 clickHandler?(linkData)
+            } else if let textData = clickData as? JWTextTextData {
+                print("click on text: \(textData.content)")
+            } else {
+                print("click on position: \(point)")
             }
         }
     }
@@ -118,6 +122,7 @@ class JWTextViewResolver {
         var commonTxtConfig = JWTextViewTextConfig()
         
         var linkDataList: [JWLinkTextData] = []
+        var textDataList: [JWTextTextData] = []
         
         for item in configArray {
             
@@ -128,6 +133,10 @@ class JWTextViewResolver {
                 let textAtt = JWTextViewConfigResolver.resolveText(with: textConfig)
                 result.append(textAtt)
                 commonTxtConfig = textConfig
+                
+                let length = result.length - startPos
+                let textData = JWTextTextData(content: textConfig.content, range: NSRange(location: startPos, length: length))
+                textDataList.append(textData)
                 
             } else if let linkConfig = item as? JWLinkTextConfig {
                 
@@ -147,6 +156,7 @@ class JWTextViewResolver {
         }
         var data = JWTextViewConfigResolver.resolveConfig(with: result, width: width)
         data.linkDataList = linkDataList
+        data.textDataList = textDataList
         return data
     }
 }
@@ -370,7 +380,6 @@ class JWTextViewGestureResolver {
         let lines = CTFrameGetLines(textFrame)
         let lineCount = CFArrayGetCount(lines)
         if lineCount <= 0 { return nil }
-        let foundLink: JWLinkTextData?
         
         // 获取每一行的origin
         var origins = [CGPoint](repeating: .zero, count: lineCount)
@@ -401,8 +410,11 @@ class JWTextViewGestureResolver {
                 // 获得当前点击坐标对应的字符串偏移
                 let idx = CTLineGetStringIndexForPosition(line, relativePoint)
                 // 判断这个偏移是否在我们的链接列表中
-                foundLink = JWTextViewGestureResolver.textLink(at: idx, linkArray: data.linkDataList)
-                return foundLink
+                if let foundLink = JWTextViewGestureResolver.textLink(at: idx, linkArray: data.linkDataList) {
+                    return foundLink
+                } else if let foundText = JWTextViewGestureResolver.text(at: idx, textArray: data.textDataList) {
+                    return foundText
+                }
             }
         }
         return nil
@@ -429,41 +441,70 @@ class JWTextViewGestureResolver {
         }
         return link
     }
+    
+    static func text(at index: CFIndex, textArray: [JWTextTextData]) -> JWTextTextData? {
+        var text: JWTextTextData?
+        for data in textArray {
+            if NSLocationInRange(index, data.range) {
+                text = data
+                break
+            }
+        }
+        return text
+    }
 }
 
 // MARK: struct
 
-struct JWTextViewConfig {
-    var width: CGFloat = 0
+public struct JWTextViewConfig {
+    public var width: CGFloat = 0
 }
 
-struct JWTextViewTextConfig: JWConfigProtocol {
+public struct JWTextViewTextConfig: JWConfigProtocol {
+    
+    public var content: String = ""
+    public var width: CGFloat = 0
+    public var fontSize: CGFloat = 0
+    public var fontName: String = "System"
+    public var lineSpace: CGFloat = 0
+    public var textColor: UIColor = .black
+    
+    public init() {
+    }
+}
+
+public struct JWImageViewConfig: JWConfigProtocol {
+    
+    public var imagePosition: CGRect = .zero
+    public var width: CGFloat = 0
+    public var height: CGFloat = 0
+    public var resouceAddress: String = ""
+    
+    public init() {
+    }
+}
+
+public struct JWLinkTextConfig: JWConfigProtocol {
+    
+    public var content: String = ""
+    public var link: String = ""
+    public var range: NSRange = NSRange(location: 0, length: 0)
+    public var fontSize: CGFloat = 0
+    public var fontName: String = "System"
+    public var lineSpace: CGFloat = 0
+    public var textColor: UIColor = .black
+    
+    public init() {
+    }
+}
+
+// text内部使用的data
+struct JWTextTextData: JWDataProtocol {
+    
+    let type: JWTextViewDataType = .text
     
     var content: String = ""
-    var width: CGFloat = 0
-    var fontSize: CGFloat = 0
-    var fontName: String = "System"
-    var lineSpace: CGFloat = 0
-    var textColor: UIColor = .black
-}
-
-struct JWImageViewConfig: JWConfigProtocol {
-    
-    var imagePosition: CGRect = .zero
-    var width: CGFloat = 0
-    var height: CGFloat = 0
-    var resouceAddress: String = ""
-}
-
-struct JWLinkTextConfig: JWConfigProtocol {
-    
-    var content: String = ""
-    var link: String = ""
     var range: NSRange = NSRange(location: 0, length: 0)
-    var fontSize: CGFloat = 0
-    var fontName: String = "System"
-    var lineSpace: CGFloat = 0
-    var textColor: UIColor = .black
 }
 
 // link内部使用的data
@@ -491,6 +532,7 @@ struct JWTextViewData {
     var height: CGFloat = 0
     var ctFrame: CTFrame?
     
+    var textDataList: [JWTextTextData] = []
     var linkDataList: [JWLinkTextData] = []
 }
 
@@ -501,12 +543,14 @@ protocol JWDataProtocol {
     var type: JWTextViewDataType { get }
 }
 
-protocol JWConfigProtocol {
+
+public protocol JWConfigProtocol {
 }
 
 // MARK: enum
 
 enum JWTextViewDataType {
+    case text
     case link
     case image
 }
