@@ -119,12 +119,13 @@ extension JWTextView: UIGestureRecognizerDelegate {
         
         if let clickData = JWTextViewGestureResolver.tapGestuer(in: self, point: point, data: dataTmp) {
             if let linkData = clickData as? JWLinkTextData {
-                print("click on : \(linkData.uri)")
+                debugPrint("click on : \(linkData.uri)")
                 clickHandler?(linkData)
             } else if let textData = clickData as? JWCharacterTextData {
-                print("click on text: \(textData.content)")
+                debugPrint("click on text: \(textData.content)")
+                clickHandler?(textData)
             } else {
-                print("click on position: \(point)")
+                debugPrint("click on position: \(point)")
             }
         }
     }
