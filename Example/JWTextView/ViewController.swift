@@ -54,6 +54,9 @@ class ViewController: UIViewController {
         view.addSubview(textView)
         
         textView.textConfigs = [textConfig, linkConfig, textConfig1, imageConfig, textConfig2]
+//        textView.textConfigs = [imageConfig]
+        
+        print("end")
     }
 
     override func didReceiveMemoryWarning() {

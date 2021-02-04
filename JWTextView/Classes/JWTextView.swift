@@ -23,6 +23,7 @@ public class JWTextView: UIView {
     public var textConfigs: [JWConfigProtocol] = [] {
         didSet {
             needRedrawText()
+            setNeedsDisplay()
         }
     }
     
@@ -37,7 +38,7 @@ public class JWTextView: UIView {
     public override func draw(_ rect: CGRect) {
         super.draw(rect)
         contentMode = .redraw
-        drawText()
+        performDraw()
     }
     
     public override init(frame: CGRect) {
@@ -68,6 +69,11 @@ public class JWTextView: UIView {
 
 extension JWTextView {
     
+    func performDraw() {
+        drawText()
+        drawImage()
+    }
+    
     func drawText() {
         guard let context = UIGraphicsGetCurrentContext() else { return }
         // 因为坐标系是相反的，所以要翻转坐标系，元坐标系原点为左下角，现翻转至左上角
@@ -77,6 +83,19 @@ extension JWTextView {
         context.scaleBy(x: 1.0, y: -1.0)
         if let ctFrame = data?.ctFrame {
             CTFrameDraw(ctFrame, context)
+        }
+    }
+    
+    func drawImage() {
+        for view in subviews {
+            view.removeFromSuperview()
+        }
+        for imageInfo in data?.imageDataList ?? [] {
+            guard let imageData = imageInfo.imageData else { continue }
+            let image = UIImage(data: imageData)
+            let imageView = UIImageView(frame: imageInfo.imagePosition)
+            imageView.image = image
+            addSubview(imageView)
         }
     }
 
@@ -166,6 +185,7 @@ class JWTextViewResolver {
         data.rawAttributedString = result
         data.linkDataList = linkDataList
         data.textDataList = textDataList
+        data.imageDataList = imageDataList
         return data
     }
 }
@@ -311,17 +331,18 @@ class JWTextViewImageResolver {
                 runPointerPointer.storeBytes(of: runPointer, as: UnsafeRawPointer.self)
                 let run = runPointerPointer.load(as: CTRun.self)
                 let runAttributes = CTRunGetAttributes(run)
-                var key = kCTRunDelegateAttributeName
+                let key = kCTRunDelegateAttributeName
                 
 //                let keyPointer = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<CFString>.stride, alignment: MemoryLayout<CFString>.alignment)
 //                keyPointer.storeBytes(of: key, as: CFString.self)
 //                guard let delegatePointer = CFDictionaryGetValue(runAttributes, keyPointer) else { continue }
 //                let delegate = delegatePointer.load(as: CTRunDelegate.self)
+                
                 guard let delegate = (runAttributes as Dictionary)[key] as! CTRunDelegate? else { continue }
-                let metaConfig = CTRunDelegateGetRefCon(delegate)
-                if !(metaConfig is JWImageViewConfig) {
-                    continue
-                }
+                let metaConfigPointer = CTRunDelegateGetRefCon(delegate)
+                let metaConfigPointerPointer = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<UnsafeRawPointer>.stride, alignment: MemoryLayout<UnsafeRawPointer>.alignment)
+                metaConfigPointerPointer.storeBytes(of: metaConfigPointer, as: UnsafeRawPointer.self)
+                var metaConfig = metaConfigPointer.load(as: JWImageViewConfig.self)
                 
                 var runBounds = CGRect.zero
                 var ascent = CGFloat(0)
@@ -339,14 +360,24 @@ class JWTextViewImageResolver {
                 
                 let delegateBounds = runBounds.offsetBy(dx: colRect.origin.x, dy: colRect.origin.y)
                 
-                imageData?.imagePosition = delegateBounds
-                imgIndex += 1
-                if imgIndex == imageArray.count {
-                    imageData = nil
+                if imgIndex >= imageArray.count {
                     break
                 } else {
-                    imageData = imageArray[imgIndex]
+                    metaConfig.imagePosition = delegateBounds
+                    imageArray[imgIndex].updateData(from: metaConfig)
+                    imgIndex += 1
                 }
+                
+//                imageData?.imagePosition = delegateBounds
+//                metaConfig.imagePosition = delegateBounds
+//                imageArray[imgIndex].imagePosition = delegateBounds
+//                imgIndex += 1
+//                if imgIndex == imageArray.count {
+//                    imageData = nil
+//                    break
+//                } else {
+//                    imageData = imageArray[imgIndex]
+//                }
             }
         }
         
@@ -561,7 +592,14 @@ struct JWImageViewData: JWDataProtocol {
     var imagePosition: CGRect = .zero
     var imageSize: CGSize = .zero
     var uri: String = ""
+    var imageData: Data?
     var range: NSRange = NSRange(location: 0, length: 0)
+    
+    mutating func updateData(from config: JWImageViewConfig) {
+        imagePosition = config.imagePosition
+        uri = config.resouceAddress
+        imageData = config.imageData
+    }
 }
 
 struct JWTextViewData {
