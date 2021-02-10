@@ -16,18 +16,18 @@ class ViewController: UIViewController {
         // Do any additional setup after loading the view, typically from a nib.
         
         var textConfig = JWTextViewTextConfig()
-        textConfig.content = "测试文本1测试文本1测试文本1测试文本1"
+        textConfig.content = "TestText1TestText1TestText1TestText1"
         textConfig.textColor = UIColor.red
         textConfig.fontSize = 16
         textConfig.width = 200
         
         var linkConfig = JWLinkTextConfig()
-        linkConfig.content = "链接内容"
+        linkConfig.content = "clickLink"
         linkConfig.textColor = UIColor.blue
         linkConfig.link = "https://www.baidu.com"
         
         var textConfig1 = JWTextViewTextConfig()
-        textConfig1.content = "测试文本2测试文本2测试文本2"
+        textConfig1.content = "TestText2TestText2TestText2"
         textConfig1.textColor = UIColor.red
         textConfig1.fontSize = 16
         textConfig1.width = 200
@@ -43,7 +43,7 @@ class ViewController: UIViewController {
         imageConfig.height = 50
         
         var textConfig2 = JWTextViewTextConfig()
-        textConfig2.content = "测试文本3测试文本3测试文本3"
+        textConfig2.content = "TestText3TestText3TestText3"
         textConfig2.textColor = UIColor.red
         textConfig2.fontSize = 16
         textConfig2.width = 200

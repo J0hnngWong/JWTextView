@@ -2,7 +2,7 @@
 //  JWTextView.swift
 //  CoreTextDemo
 //
-//  Created by 王嘉宁 on 2020/12/28.
+//  Created by J0hnnyWong on 2020/12/28.
 //  Copyright © 2020 Johnny. All rights reserved.
 //
 
@@ -52,6 +52,7 @@ public class JWTextView: UIView {
     }
     
     /// 文字更改重绘文字内容
+    /// redraw the text
     func needRedrawText() {
         let resolveData = JWTextViewResolver.resolveText(from: textConfigs, width: config.width)
         config.width = jw_width

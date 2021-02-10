@@ -21,7 +21,6 @@ Pod::Spec.new do |s|
 refrence:
  #http://blog.devtang.com/2015/06/26/using-coretext-2/
  #http://blog.devtang.com/2015/06/26/using-coretext-1/
- If I have seen further, it is by standing on the shoulders of giants.
                        DESC
 
   s.homepage         = 'https://github.com/J0hnngWong/JWTextView'
